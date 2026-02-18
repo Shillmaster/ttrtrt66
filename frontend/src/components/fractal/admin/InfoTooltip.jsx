@@ -1,8 +1,8 @@
 /**
  * BLOCK 50 — InfoTooltip Component
  * 
- * Provides contextual help for moderators with explanations
- * of what each metric means and how to react.
+ * Provides contextual help for moderators.
+ * Titles in English, descriptions in Russian.
  */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -20,7 +20,6 @@ export function InfoTooltip({
   const tooltipRef = useRef(null);
   const triggerRef = useRef(null);
 
-  // Close on click outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (tooltipRef.current && !tooltipRef.current.contains(e.target) &&
@@ -77,7 +76,7 @@ export function InfoTooltip({
           )}
           {action && (
             <div className="mt-3 pt-3 border-t border-gray-200">
-              <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Как реагировать:</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Действия:</p>
               <p className="text-sm text-gray-700">{action}</p>
             </div>
           )}
@@ -87,68 +86,68 @@ export function InfoTooltip({
   );
 }
 
-// Pre-defined tooltips for Fractal admin
+// Tooltips: English titles, Russian descriptions
 export const FRACTAL_TOOLTIPS = {
   governance: {
     title: 'Governance Mode',
-    description: 'Текущий режим управления системой. NORMAL — стандартная работа. PROTECTION_MODE — ограниченный режим при высоком риске. FROZEN_ONLY — торговля приостановлена.',
-    action: 'При PROTECTION или FROZEN — проверьте причины в карточке Playbook и примите решение о дальнейших действиях.',
+    description: 'Режим управления системой. NORMAL — штатная работа. PROTECTION — ограниченный режим. FROZEN — торговля приостановлена.',
+    action: 'При статусе отличном от NORMAL — проверьте Playbook.',
   },
   freeze: {
-    title: 'Contract Freeze',
-    description: 'Когда контракт FROZEN, параметры модели не могут быть изменены. Это защита от случайных изменений в рабочей системе.',
-    action: 'FROZEN — нормальное состояние для production. Размораживать только для планового обновления.',
+    title: 'Contract Status',
+    description: 'Статус контракта модели. FROZEN — параметры заблокированы от изменений.',
+    action: 'FROZEN — нормальное состояние для production.',
   },
   guardrails: {
-    title: 'Guardrails (Защитные ограничения)',
-    description: 'Автоматические проверки параметров системы. VALID означает, что все параметры в допустимых пределах.',
-    action: 'При VIOLATIONS — немедленно проверьте какие ограничения нарушены и примените корректирующие действия.',
+    title: 'Guardrails',
+    description: 'Защитные ограничения параметров. VALID — все в норме.',
+    action: 'При VIOLATIONS — требуется корректировка.',
   },
   health: {
     title: 'System Health',
-    description: 'Общий показатель здоровья системы от 0% до 100%. Учитывает надёжность сигналов, качество данных, стабильность модели.',
-    action: 'HEALTHY (>80%) — всё в порядке. WATCH (60-80%) — наблюдайте. ALERT (<60%) — требуется внимание. CRITICAL (<40%) — срочные меры.',
+    description: 'Общий показатель здоровья системы (0-100%). Учитывает надёжность, качество данных, стабильность.',
+    action: 'HEALTHY (>80%) — норма. WATCH (60-80%) — наблюдение. ALERT (<60%) — внимание. CRITICAL (<40%) — срочно.',
     severity: 'info',
   },
   topRisks: {
     title: 'Top Risks',
-    description: 'Ключевые факторы риска системы. Показывает какие компоненты требуют внимания.',
-    action: 'Фокусируйтесь на рисках со статусом ALERT и CRITICAL. OK и WARN можно мониторить.',
+    description: 'Ключевые факторы риска системы.',
+    action: 'Фокус на ALERT и CRITICAL. OK и WARN — мониторинг.',
   },
   guard: {
     title: 'Catastrophic Guard',
-    description: 'Защита от катастрофических потерь. Degeneration Score показывает насколько система приближается к опасным порогам.',
-    action: 'OK (<55%) — безопасно. WARN (55-75%) — повышенное внимание. CRITICAL (>75%) — система автоматически снизит риск.',
+    description: 'Защита от катастрофических потерь. Degeneration Score показывает приближение к опасным порогам.',
+    action: 'OK (<55%) — безопасно. WARN (55-75%) — внимание. CRITICAL (>75%) — автоснижение риска.',
     severity: 'warning',
   },
   reliability: {
-    title: 'Reliability Score',
-    description: 'Насколько можно доверять текущим сигналам системы. Основано на: качестве данных, стабильности модели, согласованности сигналов.',
-    action: 'При низкой надёжности (<50%) система автоматически уменьшает размер позиций.',
+    title: 'Reliability',
+    description: 'Надёжность текущих сигналов. Влияет на размер позиций.',
+    action: 'При низкой надёжности (<50%) система автоматически уменьшает позиции.',
     severity: 'info',
   },
   tailRisk: {
-    title: 'Tail Risk (Monte Carlo)',
-    description: 'Вероятностная оценка максимальных потерь. P95 Max Drawdown — максимальная просадка, которая произойдёт в 95% случаев.',
-    action: 'До 35% — приемлемо. 35-45% — повышенный риск. >45% — критический уровень, рассмотрите снижение экспозиции.',
+    title: 'Tail Risk (MC)',
+    description: 'Monte Carlo оценка максимальных потерь. P95 Max Drawdown — просадка в 95% сценариев.',
+    action: 'До 35% — норма. 35-45% — повышенный риск. >45% — критично.',
     severity: 'warning',
   },
   performance: {
     title: 'Performance Windows',
-    description: 'Историческая эффективность за разные периоды. Sharpe — доходность с поправкой на риск. MaxDD — максимальная просадка. Hit Rate — процент прибыльных сигналов.',
-    action: 'Sharpe >1.0 — отлично. 0.5-1.0 — хорошо. <0.5 — требует анализа причин.',
+    description: 'Историческая эффективность за 30/60/90 дней. Sharpe — доходность/риск. MaxDD — макс. просадка. Hit Rate — % прибыльных.',
+    action: 'Sharpe >1.0 — отлично. 0.5-1.0 — хорошо. <0.5 — анализ.',
     severity: 'info',
   },
   playbook: {
-    title: 'Playbook Recommendation',
-    description: 'Автоматическая рекомендация действий на основе текущего состояния системы. Приоритет P1 — критический, P6 — информационный.',
-    action: 'Внимательно прочитайте причины и предлагаемые действия. При P1-P2 — действуйте немедленно.',
+    title: 'Playbook',
+    description: 'Автоматическая рекомендация действий. Priority P1 — критично, P6 — информационно.',
+    action: 'При P1-P2 — действуйте немедленно.',
     severity: 'warning',
   },
   recentActivity: {
     title: 'Recent Activity',
-    description: 'График надёжности за последние 7 дней и журнал последних действий администратора.',
-    action: 'Следите за трендом надёжности. Падающий тренд может указывать на проблемы.',
+    description: 'График надёжности за 7 дней и журнал действий.',
+    action: 'Следите за трендом. Падение может указывать на проблемы.',
   },
 };
 

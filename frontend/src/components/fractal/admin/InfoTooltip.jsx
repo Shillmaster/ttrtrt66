@@ -152,23 +152,69 @@ export const FRACTAL_TOOLTIPS = {
   // Shadow Tab
   shadowVerdict: {
     title: 'Shadow Verdict',
-    description: 'Сравнение Active и Shadow моделей. Показывает, есть ли значимое расхождение.',
-    action: 'PROMOTE — Shadow лучше. NO_ACTION — нет значимой разницы.',
+    description: 'Итоговый вердикт сравнения Active и Shadow моделей. Система анализирует статистическую значимость различий в производительности.',
+    action: 'SHADOW_OUTPERFORMS — Shadow превосходит, рекомендуется promotion. HOLD_ACTIVE — Active справляется, изменения не нужны. NO_EDGE — различия статистически незначимы. INSUFFICIENT_DATA — недостаточно данных для вывода.',
+    severity: 'info',
+  },
+  resolvedSignals: {
+    title: 'Resolved Signals',
+    description: 'Количество сигналов, по которым уже известен результат (прошло достаточно времени). Минимум 30 сигналов требуется для статистически достоверного вердикта.',
+    action: 'До 30 сигналов — данных недостаточно. После 30 — можно принимать решения о promotion.',
+    severity: 'info',
+  },
+  shadowScore: {
+    title: 'Shadow Score',
+    description: 'Комплексная оценка Shadow модели (0-100). Учитывает Sharpe, MaxDD, Win Rate, калибровку.',
+    action: '65+ — отлично, Shadow готов к promotion. 50-65 — хорошо, но требуется наблюдение. <50 — Shadow уступает Active.',
+    severity: 'info',
+  },
+  deltaSharpe: {
+    title: 'ΔSharpe (Delta Sharpe)',
+    description: 'Разница коэффициента Sharpe между Shadow и Active. Sharpe = доходность / риск. Положительное значение — Shadow эффективнее.',
+    action: '>+0.1 — значимое преимущество Shadow. <-0.1 — Active лучше. ±0.1 — нейтрально.',
+    severity: 'info',
+  },
+  deltaMaxDD: {
+    title: 'ΔMaxDD (Delta Max Drawdown)',
+    description: 'Разница максимальной просадки. Отрицательное значение — Shadow показывает меньшие просадки.',
+    action: '<-2% — Shadow значительно безопаснее. >+2% — Shadow рискованнее. ±2% — сопоставимо.',
+    severity: 'warning',
+  },
+  deltaCAGR: {
+    title: 'ΔCAGR (Delta CAGR)',
+    description: 'Разница среднегодовой доходности (Compound Annual Growth Rate) между моделями.',
+    action: '>+1% — Shadow доходнее. <-1% — Active доходнее. ±1% — сопоставимая доходность.',
+    severity: 'info',
   },
   divergenceMatrix: {
     title: 'Divergence Matrix',
-    description: 'Матрица расхождений по presets и горизонтам. Тепловая карта показывает Delta Sharpe.',
-    action: 'Зелёный — Shadow лучше. Красный — Active лучше.',
+    description: 'Матрица расхождений 3×3: Preset (CONSERVATIVE, BALANCED, AGGRESSIVE) × Horizon (7d, 14d, 30d). Тепловая карта показывает Delta Sharpe для каждой комбинации.',
+    action: 'Зелёная ячейка — Shadow лучше. Красная — Active лучше. Серая — нейтрально. Клик по ячейке выбирает её для детального анализа.',
+    severity: 'info',
   },
   equityOverlay: {
     title: 'Equity Overlay',
-    description: 'Сравнение кривых капитала Active vs Shadow за выбранный период.',
-    action: 'Визуально оцените, какая модель стабильнее.',
+    description: 'График кривых капитала Active (серая линия) vs Shadow (синяя линия). Нормализация приводит обе кривые к старту с 1.0 для корректного сравнения.',
+    action: 'Визуально оцените стабильность и направление кривых. Резкие провалы — высокая волатильность.',
+    severity: 'info',
   },
   calibration: {
     title: 'Calibration Delta',
-    description: 'Сравнение калибровочных параметров Active и Shadow моделей.',
-    action: 'Большие различия могут указывать на overfitting.',
+    description: 'Сравнение калибровки вероятностей между Active и Shadow. ECE (Expected Calibration Error) показывает, насколько уверенность модели соответствует реальности. Brier Score — точность вероятностных прогнозов.',
+    action: 'Рост ECE/Brier >2% при лучшем Sharpe — признак overfitting. Модель уверена в прогнозах больше, чем следует.',
+    severity: 'warning',
+  },
+  divergenceLedger: {
+    title: 'Divergence Ledger',
+    description: 'Журнал всех расхождений между Active и Shadow моделями. Показывает когда модели принимали разные торговые решения и кто оказался прав.',
+    action: 'Анализируйте паттерны: если Shadow систематически побеждает в определённых режимах — это важный сигнал.',
+    severity: 'info',
+  },
+  governanceActions: {
+    title: 'Governance Actions',
+    description: 'Управляющие действия над Shadow моделью. Все действия логируются и требуют подтверждения. Promotion — переводит Shadow в Active. Freeze — останавливает генерацию сигналов. Archive — переводит в архив.',
+    action: 'Действия разблокируются после 30+ resolved signals. При SHADOW_OUTPERFORMS рассмотрите Promotion.',
+    severity: 'warning',
   },
   // Volatility Tab
   volAttribution: {

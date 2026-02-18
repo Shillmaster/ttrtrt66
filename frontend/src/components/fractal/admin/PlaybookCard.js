@@ -111,6 +111,10 @@ export function PlaybookCard({ recommendation, onApply }) {
       
       {/* Playbook Badge */}
       <div className="mb-5">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Рекомендуемое действие</span>
+          <InfoTooltip {...FRACTAL_TOOLTIPS.playbookTypes} placement="right" />
+        </div>
         <div className={`inline-flex items-center gap-3 px-5 py-3 rounded-xl ${config.badge}`}>
           <PlaybookIcon className="w-6 h-6" />
           <span className="text-lg font-bold">{recommendation.playbook.replace(/_/g, ' ')}</span>

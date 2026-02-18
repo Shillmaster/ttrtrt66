@@ -149,6 +149,64 @@ export const FRACTAL_TOOLTIPS = {
     description: 'График надёжности за 7 дней и журнал действий.',
     action: 'Следите за трендом. Падение может указывать на проблемы.',
   },
+  // Shadow Tab
+  shadowVerdict: {
+    title: 'Shadow Verdict',
+    description: 'Сравнение Active и Shadow моделей. Показывает, есть ли значимое расхождение.',
+    action: 'PROMOTE — Shadow лучше. NO_ACTION — нет значимой разницы.',
+  },
+  divergenceMatrix: {
+    title: 'Divergence Matrix',
+    description: 'Матрица расхождений по presets и горизонтам. Тепловая карта показывает Delta Sharpe.',
+    action: 'Зелёный — Shadow лучше. Красный — Active лучше.',
+  },
+  equityOverlay: {
+    title: 'Equity Overlay',
+    description: 'Сравнение кривых капитала Active vs Shadow за выбранный период.',
+    action: 'Визуально оцените, какая модель стабильнее.',
+  },
+  calibration: {
+    title: 'Calibration Delta',
+    description: 'Сравнение калибровочных параметров Active и Shadow моделей.',
+    action: 'Большие различия могут указывать на overfitting.',
+  },
+  // Volatility Tab
+  volAttribution: {
+    title: 'Volatility Attribution',
+    description: 'Анализ влияния волатильности на результаты. Сравнение Raw vs Scaled equity.',
+    action: 'Scaled должен показывать меньший MaxDD при сохранении Sharpe.',
+  },
+  regimeTimeline: {
+    title: 'Regime Timeline',
+    description: 'История режимов волатильности за период. LOW, NORMAL, HIGH, EXPANSION, CRISIS.',
+    action: 'Следите за частотой переходов в CRISIS режим.',
+  },
+  protectionReport: {
+    title: 'Protection Report',
+    description: 'Сравнение Raw vs Scaled метрик. Показывает эффективность vol scaling.',
+    action: 'Снижение MaxDD при сохранении доходности — хороший знак.',
+  },
+  regimePerformance: {
+    title: 'Performance by Regime',
+    description: 'Статистика по каждому режиму: Hit Rate, MaxDD, Vol Multiplier.',
+    action: 'В CRISIS режиме ожидается сниженный размер позиций.',
+  },
+  // Alerts Tab
+  alertQuota: {
+    title: 'Alert Quota (24h)',
+    description: 'Лимит 3 INFO/HIGH алерта за 24 часа. CRITICAL — без лимита.',
+    action: 'При исчерпании квоты новые INFO/HIGH алерты блокируются.',
+  },
+  alertStats: {
+    title: 'Alert Statistics',
+    description: 'Количество алертов за 24h и 7 дней по уровням.',
+    action: 'Частые CRITICAL алерты требуют внимания к системе.',
+  },
+  alertHistory: {
+    title: 'Alert History',
+    description: 'Журнал всех алертов с фильтрами. SENT — отправлено, остальные — заблокированы.',
+    action: 'Просматривайте заблокированные алерты для понимания нагрузки.',
+  },
 };
 
 export default InfoTooltip;

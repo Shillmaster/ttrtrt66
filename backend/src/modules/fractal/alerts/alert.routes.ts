@@ -13,7 +13,7 @@
 import { FastifyInstance } from 'fastify';
 import { AlertLogModel } from './alert.model.js';
 import { getQuotaStatus, getAlertStats } from './alert.quota.service.js';
-import { runAlertEngine, type AlertEngineContext } from './alert.engine.service.js';
+import { runAlertEngine, evaluateAlerts, type AlertEngineContext } from './alert.engine.service.js';
 import { sendAlertsToTelegram } from './alert.tg.adapter.js';
 
 export async function registerAlertRoutes(app: FastifyInstance) {

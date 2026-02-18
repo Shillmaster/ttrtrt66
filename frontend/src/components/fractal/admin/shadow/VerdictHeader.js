@@ -213,11 +213,15 @@ const styles = {
     borderRadius: 8,
     border: '1px solid #e2e8f0'
   },
+  cardHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6
+  },
   cardLabel: {
-    display: 'block',
     fontSize: 11,
     color: '#64748b',
-    marginBottom: 6,
     textTransform: 'uppercase',
     letterSpacing: '0.5px'
   },
@@ -247,7 +251,6 @@ const styles = {
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#22c55e',
     transition: 'width 0.3s ease'
   },
   progressHint: {
@@ -269,6 +272,12 @@ const styles = {
     gap: 4,
     paddingTop: 12,
     borderTop: '1px solid #e2e8f0'
+  },
+  reasoningTitle: {
+    fontSize: 12,
+    fontWeight: 600,
+    color: '#374151',
+    marginBottom: 4
   },
   reasonItem: {
     fontSize: 12,

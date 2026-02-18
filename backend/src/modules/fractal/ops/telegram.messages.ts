@@ -15,6 +15,7 @@ type DailyRunSummary = {
     write: { success?: boolean; written?: number; skipped?: number };
     resolve: { success?: boolean; resolved?: number };
     rebuild: { success?: boolean };
+    alerts?: { success?: boolean; sent?: number; blocked?: number; quotaUsed?: number; quotaMax?: number };
     audit: { success?: boolean };
   };
   health: { level: 'HEALTHY' | 'WATCH' | 'ALERT' | 'CRITICAL'; reasons: string[] };
@@ -27,6 +28,12 @@ type DailyRunSummary = {
   };
   resolvedCount?: number;
   governanceMode?: string;
+  alerts?: {
+    sent: number;
+    blocked: number;
+    quotaUsed: number;
+    quotaMax: number;
+  };
 };
 
 export function buildDailyReport(s: DailyRunSummary): string {

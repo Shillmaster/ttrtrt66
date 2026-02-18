@@ -64,11 +64,19 @@ function formatAlertMessage(event: AlertEvent): string {
 
 /**
  * Send single alert to Telegram
+ * GUARD: Only sends if FRACTAL_ALERTS_ENABLED=true AND blockedBy === 'NONE'
  */
 export async function sendAlertToTelegram(
   event: AlertEvent,
   logger: Console | any = console
 ): Promise<{ ok: boolean; error?: string }> {
+  // PRODUCTION GUARD: Check FRACTAL_ALERTS_ENABLED first
+  if (!isAlertsEnabled()) {
+    logger.info?.('[AlertTG] FRACTAL_ALERTS_ENABLED=false, skipping send') ||
+      console.log('[AlertTG] FRACTAL_ALERTS_ENABLED=false, skipping send');
+    return { ok: false, error: 'ALERTS_DISABLED' };
+  }
+  
   // Only send if not blocked
   if (event.blockedBy !== 'NONE') {
     return { ok: false, error: `Blocked by ${event.blockedBy}` };

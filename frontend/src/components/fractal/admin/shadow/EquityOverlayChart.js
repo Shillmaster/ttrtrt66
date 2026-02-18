@@ -6,6 +6,7 @@
  */
 
 import React, { useRef, useEffect, useState } from 'react';
+import { InfoTooltip, FRACTAL_TOOLTIPS } from '../InfoTooltip';
 
 export default function EquityOverlayChart({ equity, state }) {
   const canvasRef = useRef(null);
@@ -164,9 +165,12 @@ export default function EquityOverlayChart({ equity, state }) {
   const shadowFinal = calcFinalValue(shadowEquity);
 
   return (
-    <div>
+    <div data-testid="equity-overlay">
       <div style={styles.header}>
-        <h3 style={styles.title}>Equity Overlay</h3>
+        <div style={styles.titleRow}>
+          <h3 style={styles.title}>Equity Overlay</h3>
+          <InfoTooltip {...FRACTAL_TOOLTIPS.equityOverlay} severity="info" />
+        </div>
         <div style={styles.controls}>
           <label style={styles.toggle}>
             <input
@@ -174,7 +178,7 @@ export default function EquityOverlayChart({ equity, state }) {
               checked={normalized}
               onChange={(e) => setNormalized(e.target.checked)}
             />
-            <span>Normalize</span>
+            <span>Нормализация</span>
           </label>
         </div>
       </div>
@@ -192,7 +196,7 @@ export default function EquityOverlayChart({ equity, state }) {
           <span style={{ ...styles.metricValue, color: '#3b82f6' }}>{shadowFinal.toFixed(4)}</span>
         </div>
         <div style={styles.metric}>
-          <span style={styles.metricLabel}>Selected</span>
+          <span style={styles.metricLabel}>Выбрано</span>
           <span style={styles.metricValue}>{state.preset} · {state.horizonKey}</span>
         </div>
       </div>
@@ -206,6 +210,11 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12
+  },
+  titleRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8
   },
   title: {
     margin: 0,

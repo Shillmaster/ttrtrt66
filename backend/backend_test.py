@@ -2920,6 +2920,7 @@ class FractalAPITester:
             "phase2_success": phase2_success,
             "institutional_success": institutional_success,
             "core_success": core_success,
+            "alert_success": alert_success,
             "all_results": self.test_results
         }
 

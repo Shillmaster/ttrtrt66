@@ -1,6 +1,7 @@
 /**
- * BLOCK 50 — Governance Card (Improved UI)
- * Shows governance mode, freeze state, guardrails with tooltips
+ * BLOCK 50 — Governance Card
+ * English: titles, status badges
+ * Russian: descriptions only in tooltips
  */
 
 import React from 'react';
@@ -13,32 +14,28 @@ const modeConfig = {
     border: 'border-green-200', 
     text: 'text-green-700', 
     badge: 'bg-green-100 text-green-700',
-    icon: CheckCircle,
-    description: 'Система работает в штатном режиме'
+    icon: CheckCircle
   },
   PROTECTION_MODE: { 
     bg: 'bg-gradient-to-br from-amber-50 to-yellow-50', 
     border: 'border-amber-300', 
     text: 'text-amber-700', 
     badge: 'bg-amber-100 text-amber-700',
-    icon: Shield,
-    description: 'Активирован защитный режим — экспозиция ограничена'
+    icon: Shield
   },
   FROZEN_ONLY: { 
     bg: 'bg-gradient-to-br from-blue-50 to-indigo-50', 
     border: 'border-blue-300', 
     text: 'text-blue-700', 
     badge: 'bg-blue-100 text-blue-700',
-    icon: Lock,
-    description: 'Новые позиции заморожены'
+    icon: Lock
   },
   HALT_TRADING: { 
     bg: 'bg-gradient-to-br from-red-50 to-rose-50', 
     border: 'border-red-400', 
     text: 'text-red-800', 
     badge: 'bg-red-200 text-red-800',
-    icon: AlertTriangle,
-    description: 'Торговля полностью остановлена'
+    icon: AlertTriangle
   },
 };
 
@@ -56,18 +53,13 @@ export function GovernanceCard({ governance }) {
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider">Governance</h3>
+          <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider">GOVERNANCE</h3>
           <InfoTooltip {...FRACTAL_TOOLTIPS.governance} placement="right" />
         </div>
         <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${mode.badge}`}>
           <ModeIcon className="w-4 h-4" />
           <span className="text-sm font-bold">{governance.mode.replace(/_/g, ' ')}</span>
         </div>
-      </div>
-      
-      {/* Mode Description */}
-      <div className="mb-5 p-3 bg-white/50 rounded-xl border border-gray-100">
-        <p className="text-sm text-gray-600">{mode.description}</p>
       </div>
       
       {/* Status Grid */}
@@ -89,7 +81,7 @@ export function GovernanceCard({ governance }) {
               <Unlock className="w-4 h-4" />
             )}
             <span className="text-sm font-bold">
-              {governance.freeze?.isFrozen ? 'FROZEN' : 'UNFROZEN'}
+              {governance.freeze?.isFrozen ? 'FROZEN' : 'ACTIVE'}
             </span>
           </div>
         </div>
@@ -132,7 +124,7 @@ export function GovernanceCard({ governance }) {
         <div className="mt-4 p-3 bg-amber-100 rounded-xl border border-amber-200 flex items-center gap-3">
           <Shield className="w-5 h-5 text-amber-600 flex-shrink-0" />
           <p className="text-sm text-amber-800 font-medium">
-            Protection Mode активен — экспозиция ограничена для защиты капитала
+            Protection Mode Active
           </p>
         </div>
       )}

@@ -392,6 +392,42 @@ export const ADMIN_NAV = [
           },
         ],
       },
+      // ═══════════════════════════════════════════════════════════════
+      // FRACTAL MODULE - Institutional Risk Engine (BTC-only)
+      // ═══════════════════════════════════════════════════════════════
+      {
+        id: 'fractal-module',
+        label: 'Fractal Module',
+        icon: TrendingDown,
+        badge: 'ACTIVE',
+        children: [
+          { 
+            id: 'fractal-overview',
+            label: 'Overview', 
+            path: '/admin/fractal?tab=overview',
+            icon: Activity,
+          },
+          { 
+            id: 'fractal-shadow',
+            label: 'Shadow Divergence', 
+            path: '/admin/fractal?tab=shadow',
+            icon: Layers,
+          },
+          { 
+            id: 'fractal-volatility',
+            label: 'Volatility Attribution', 
+            path: '/admin/fractal?tab=volatility',
+            icon: Gauge,
+          },
+          { 
+            id: 'fractal-alerts',
+            label: 'Alerts', 
+            path: '/admin/fractal?tab=alerts',
+            icon: Bell,
+            badge: 'NEW',
+          },
+        ],
+      },
       // Future modules (disabled/placeholder)
       {
         id: 'reddit-module',

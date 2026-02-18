@@ -55,7 +55,7 @@ export const HORIZON_CONFIG: Record<HorizonKey, HorizonConfig> = {
   },
   "180d": {
     windowLen: 180,
-    aftermathDays: 120,
+    aftermathDays: 180,
     topK: 6,
     minHistory: 600,
     label: "Half-Year",
@@ -63,9 +63,9 @@ export const HORIZON_CONFIG: Record<HorizonKey, HorizonConfig> = {
   },
   "365d": {
     windowLen: 365,
-    aftermathDays: 180,
+    aftermathDays: 365,
     topK: 5,
-    minHistory: 800,
+    minHistory: 1000,
     label: "Year",
     tier: "MACRO"
   }

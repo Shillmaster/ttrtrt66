@@ -1,21 +1,18 @@
 /**
  * BLOCK 57.2 — Verdict Header
  * 
- * Top bar showing:
- * - Verdict badge
- * - Resolved progress
- * - Key deltas
- * - Recommendation
+ * Unified language: English titles/metrics, Russian tooltips
  */
 
 import React from 'react';
+import { InfoTooltip, FRACTAL_TOOLTIPS } from '../InfoTooltip';
 
 const VERDICT_CONFIG = {
-  'INSUFFICIENT_DATA': { color: '#64748b', bg: '#f1f5f9', label: 'Insufficient Data' },
-  'HOLD_ACTIVE': { color: '#f59e0b', bg: '#fef3c7', label: 'Hold Active' },
-  'SHADOW_OUTPERFORMS': { color: '#22c55e', bg: '#dcfce7', label: 'Shadow Outperforms' },
-  'NO_EDGE': { color: '#6b7280', bg: '#f3f4f6', label: 'No Edge' },
-  'ACTIVE_BETTER': { color: '#ef4444', bg: '#fef2f2', label: 'Active Better' }
+  'INSUFFICIENT_DATA': { color: '#64748b', bg: '#f1f5f9', label: 'INSUFFICIENT DATA' },
+  'HOLD_ACTIVE': { color: '#f59e0b', bg: '#fef3c7', label: 'HOLD ACTIVE' },
+  'SHADOW_OUTPERFORMS': { color: '#22c55e', bg: '#dcfce7', label: 'SHADOW OUTPERFORMS' },
+  'NO_EDGE': { color: '#6b7280', bg: '#f3f4f6', label: 'NO EDGE' },
+  'ACTIVE_BETTER': { color: '#ef4444', bg: '#fef2f2', label: 'ACTIVE BETTER' }
 };
 
 export default function VerdictHeader({ meta, recommendation, cellData, state, lastFetch, onRefresh }) {

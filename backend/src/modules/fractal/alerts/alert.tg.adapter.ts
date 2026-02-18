@@ -3,9 +3,11 @@
  * 
  * Sends alerts to admin Telegram chat.
  * Only sends events with blockedBy === 'NONE'.
+ * 
+ * PRODUCTION GUARD: Requires FRACTAL_ALERTS_ENABLED=true
  */
 
-import { tgSendMessage, getTelegramConfig } from '../ops/telegram.notifier.js';
+import { tgSendMessage, getTelegramConfig, isAlertsEnabled } from '../ops/telegram.notifier.js';
 import type { AlertEvent } from './alert.types.js';
 
 const ADMIN_BASE_URL = process.env.PUBLIC_ADMIN_URL || '';

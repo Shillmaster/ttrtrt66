@@ -249,6 +249,101 @@ function buildDistributionSeries(
 }
 
 // ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+
+function normalizeToBase100(prices: number[]): number[] {
+  if (prices.length === 0) return [];
+  const base = prices[0];
+  if (base === 0) return prices.map(() => 100);
+  return prices.map(p => (p / base) * 100);
+}
+
+function calculateVolatility(prices: number[]): number {
+  if (prices.length < 2) return 0;
+  const returns: number[] = [];
+  for (let i = 1; i < prices.length; i++) {
+    returns.push((prices[i] - prices[i-1]) / prices[i-1]);
+  }
+  const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
+  const variance = returns.reduce((a, r) => a + Math.pow(r - mean, 2), 0) / returns.length;
+  return Math.sqrt(variance);
+}
+
+function calculateVolatilityMatch(series1: number[], series2: number[]): number {
+  const vol1 = calculateVolatility(series1);
+  const vol2 = calculateVolatility(series2);
+  if (vol1 === 0 && vol2 === 0) return 1;
+  if (vol1 === 0 || vol2 === 0) return 0;
+  return Math.min(vol1, vol2) / Math.max(vol1, vol2);
+}
+
+function calculateDrawdownShapeMatch(series1: number[], series2: number[]): number {
+  const dd1 = calculateMaxDD(series1);
+  const dd2 = calculateMaxDD(series2);
+  if (dd1 === 0 && dd2 === 0) return 1;
+  if (dd1 === 0 || dd2 === 0) return 0.5;
+  return Math.min(dd1, dd2) / Math.max(dd1, dd2);
+}
+
+function detectPhaseSimple(closes: number[], index: number): string {
+  if (index < 50) return 'UNKNOWN';
+  const ma20 = closes.slice(index - 20, index).reduce((a, b) => a + b, 0) / 20;
+  const ma50 = closes.slice(index - 50, index).reduce((a, b) => a + b, 0) / 50;
+  const price = closes[index];
+  const priceVsMa20 = (price - ma20) / ma20;
+  const priceVsMa50 = (price - ma50) / ma50;
+  if (priceVsMa20 > 0.05 && priceVsMa50 > 0.05) return 'MARKUP';
+  if (priceVsMa20 < -0.05 && priceVsMa50 < -0.05) return 'MARKDOWN';
+  if (priceVsMa20 > 0 && priceVsMa50 < 0) return 'RECOVERY';
+  if (priceVsMa20 < 0 && priceVsMa50 > 0) return 'DISTRIBUTION';
+  return 'ACCUMULATION';
+}
+
+function calculateOutcomesFromAftermath(aftermathRaw: number[], aftermathBase: number): Record<string, number> {
+  if (aftermathRaw.length === 0 || aftermathBase === 0) return {};
+  const outcomes: Record<string, number> = {};
+  const horizons = [7, 14, 30, 90, 180, 365];
+  for (const h of horizons) {
+    const idx = h - 1;
+    if (idx < aftermathRaw.length) {
+      outcomes[`ret${h}d`] = (aftermathRaw[idx] - aftermathBase) / aftermathBase;
+    }
+  }
+  return outcomes;
+}
+
+function calculateMaxDD(prices: number[]): number {
+  if (prices.length === 0) return 0;
+  let peak = prices[0];
+  let maxDD = 0;
+  for (const p of prices) {
+    if (p > peak) peak = p;
+    const dd = (peak - p) / peak;
+    if (dd > maxDD) maxDD = dd;
+  }
+  return maxDD;
+}
+
+function calculateMFE(prices: number[]): number {
+  if (prices.length === 0) return 0;
+  const base = prices[0];
+  let maxUp = 0;
+  for (const p of prices) {
+    const gain = (p - base) / base;
+    if (gain > maxUp) maxUp = gain;
+  }
+  return maxUp;
+}
+
+function percentile(arr: number[], p: number): number {
+  if (arr.length === 0) return 0;
+  const sorted = [...arr].sort((a, b) => a - b);
+  const idx = Math.floor(p * (sorted.length - 1));
+  return sorted[idx] || 0;
+}
+
+// ═══════════════════════════════════════════════════════════════
 // FORECAST PACK BUILDER
 // ═══════════════════════════════════════════════════════════════
 

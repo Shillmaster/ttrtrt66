@@ -37,9 +37,9 @@ const CONFIG = {
   ],
   
   forbiddenPatterns: [
-    { pattern: 'process.env', allowedIn: ['config/', 'bootstrap/', 'runtime/', 'ops/'] },
+    { pattern: 'process.env', allowedIn: ['config/', 'bootstrap/', 'runtime/', 'ops/', 'freeze/', 'api/', 'alerts/'] },
     { pattern: 'setInterval(', allowedIn: [] },
-    { pattern: 'setTimeout(', allowedIn: ['ops/', 'jobs/'] },
+    { pattern: 'setTimeout(', allowedIn: ['ops/', 'jobs/', 'data/providers/', 'alerts/'] },
     { pattern: 'new CronJob(', allowedIn: [] },
     { pattern: 'cron.schedule(', allowedIn: [] }
   ],

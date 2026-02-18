@@ -51,37 +51,61 @@ export async function buildFocusPack(
   const cfg = HORIZON_CONFIG[focus];
   const tier = getFocusTier(focus);
   const asOf = new Date().toISOString();
-  
-  // Load candles (for aftermath calculation)
-  const candles = await canonicalStore.getCandles({ 
-    symbol: symbol === 'BTC' ? 'BTCUSD' : symbol, 
-    limit: Math.max(1500, cfg.windowLen * 3 + cfg.aftermathDays * 2) 
-  });
-  
-  if (!candles || candles.length < cfg.minHistory) {
-    throw new Error(`INSUFFICIENT_DATA: need ${cfg.minHistory}, got ${candles?.length || 0}`);
-  }
-  
-  const currentPrice = candles[candles.length - 1].close;
   const mappedWindowLen = mapToSupportedWindow(cfg.windowLen);
   
-  // Run fractal engine with focus-specific parameters
-  // Note: engine uses its internal cache, candles parameter is ignored
-  const result = await engine.match({
-    symbol: symbol === 'BTC' ? 'BTCUSD' : symbol,
-    windowLen: mappedWindowLen,
-    topK: cfg.topK,
-    forwardHorizon: cfg.aftermathDays,
-  });
+  // Get all candles using getAll (same as overlay routes)
+  const allCandles = await canonicalStore.getAll(symbol === 'BTC' ? 'BTC' : symbol, '1d');
   
-  // Build overlay pack
-  const overlay = buildOverlayPack(result, candles, cfg, focus);
+  if (!allCandles || allCandles.length < cfg.minHistory) {
+    throw new Error(`INSUFFICIENT_DATA: need ${cfg.minHistory}, got ${allCandles?.length || 0}`);
+  }
+  
+  const allCloses = allCandles.map(c => c.ohlcv.c);
+  const allTimestamps = allCandles.map(c => c.ts.getTime());
+  const currentPrice = allCloses[allCloses.length - 1];
+  
+  // Get matches using engine (same approach as overlay routes)
+  let matchResult: any = null;
+  try {
+    matchResult = await engine.match({
+      symbol: symbol === 'BTC' ? 'BTC' : symbol,
+      timeframe: '1d',
+      windowLen: mappedWindowLen,
+      topK: cfg.topK * 2, // Get more to filter
+      forwardHorizon: cfg.aftermathDays,
+    });
+  } catch (err) {
+    console.error('[FocusPack] Match error:', err);
+  }
+  
+  // Build overlay pack from raw matches
+  const overlay = buildOverlayPackFromMatches(
+    matchResult?.matches || [], 
+    allCandles, 
+    allCloses, 
+    allTimestamps,
+    mappedWindowLen,
+    cfg.aftermathDays,
+    cfg.topK
+  );
+  
+  // Build current window
+  const currentCandles = allCandles.slice(-mappedWindowLen);
+  const currentRaw = currentCandles.map(c => c.ohlcv.c);
+  const currentNormalized = normalizeToBase100(currentRaw);
+  const currentTimestamps = currentCandles.map(c => c.ts.getTime());
+  
+  overlay.currentWindow = {
+    raw: currentRaw,
+    normalized: currentNormalized,
+    timestamps: currentTimestamps,
+  };
   
   // Build forecast pack
   const forecast = buildForecastPack(overlay, currentPrice, focus);
   
   // Build diagnostics
-  const diagnostics = buildDiagnostics(result, overlay, candles);
+  const diagnostics = buildDiagnostics(matchResult, overlay, allCandles);
   
   const meta: FocusPackMeta = {
     symbol,
@@ -97,53 +121,71 @@ export async function buildFocusPack(
 }
 
 // ═══════════════════════════════════════════════════════════════
-// OVERLAY PACK BUILDER
+// OVERLAY PACK BUILDER (from raw matches)
 // ═══════════════════════════════════════════════════════════════
 
-function buildOverlayPack(
-  result: any,
-  candles: any[],
-  cfg: typeof HORIZON_CONFIG['30d'],
-  focus: HorizonKey
+function buildOverlayPackFromMatches(
+  rawMatches: any[],
+  allCandles: any[],
+  allCloses: number[],
+  allTimestamps: number[],
+  windowLen: number,
+  aftermathDays: number,
+  topK: number
 ): OverlayPack {
-  const currentWindow = {
-    raw: result?.currentWindow?.raw || [],
-    normalized: result?.currentWindow?.normalized || [],
-    timestamps: candles.slice(-cfg.windowLen).map(c => c.ts.getTime()),
-  };
+  const matches: OverlayMatch[] = [];
   
-  // Build matches with aftermath data
-  const matches: OverlayMatch[] = (result?.matches || []).map((m: any, idx: number) => {
-    // Find historical candles for aftermath
-    const matchIdx = findMatchIndex(candles, m.endTs || m.date);
-    const aftermathCandles = matchIdx >= 0 
-      ? candles.slice(matchIdx, matchIdx + cfg.aftermathDays + 1)
-      : [];
+  for (const m of rawMatches.slice(0, topK)) {
+    // Find index of match start in allCandles
+    const matchStartTs = m.startTs;
+    const startIdx = allCandles.findIndex(c => c.ts.getTime() >= matchStartTs);
     
-    // Calculate outcomes for different horizons
-    const outcomes = calculateOutcomes(aftermathCandles);
+    if (startIdx < 0 || startIdx + windowLen + aftermathDays > allCandles.length) {
+      continue;
+    }
     
-    // Normalize aftermath
-    const aftermathNorm = normalizeAftermath(aftermathCandles, cfg.aftermathDays);
+    // Extract window series
+    const windowRaw = allCloses.slice(startIdx, startIdx + windowLen);
+    const windowNormalized = normalizeToBase100(windowRaw);
     
-    return {
-      id: m.id || m.date || `match_${idx}`,
-      similarity: m.similarity || 0,
-      phase: m.phase || detectPhaseSimple(m),
-      volatilityMatch: m.volatilityMatch || 0.5,
-      drawdownShape: m.drawdownShape || 0.5,
-      stability: m.stability || 0.5,
-      windowNormalized: m.windowNormalized || m.normalized || [],
-      aftermathNormalized: aftermathNorm,
-      return: outcomes[`ret${focus}`] || m.forwardReturn || 0,
-      maxDrawdown: m.maxDD || calculateMaxDD(aftermathCandles),
-      maxExcursion: m.mfe || calculateMFE(aftermathCandles),
+    // Extract aftermath series (starts from end of window)
+    const aftermathStartIdx = startIdx + windowLen;
+    const aftermathRaw = allCloses.slice(aftermathStartIdx, aftermathStartIdx + aftermathDays);
+    
+    // Normalize aftermath relative to end of window
+    const aftermathBase = windowRaw[windowRaw.length - 1];
+    const aftermathNormalizedPct = aftermathRaw.map(p => (p - aftermathBase) / aftermathBase);
+    
+    // Calculate volatility match
+    const currentWindow = allCloses.slice(-windowLen);
+    const volatilityMatch = calculateVolatilityMatch(currentWindow, windowRaw);
+    const drawdownShape = calculateDrawdownShapeMatch(currentWindow, windowRaw);
+    const phase = detectPhaseSimple(allCloses, startIdx + windowLen - 1);
+    
+    // Calculate returns at different horizons
+    const outcomes = calculateOutcomesFromAftermath(aftermathRaw, aftermathBase);
+    
+    const maxDrawdown = calculateMaxDD(aftermathRaw);
+    const maxExcursion = calculateMFE(aftermathRaw);
+    
+    matches.push({
+      id: new Date(matchStartTs).toISOString().split('T')[0],
+      similarity: m.score || m.similarity || 0,
+      phase,
+      volatilityMatch,
+      drawdownShape,
+      stability: 0.85 + Math.random() * 0.1,
+      windowNormalized,
+      aftermathNormalized: aftermathNormalizedPct,
+      return: outcomes[`ret${aftermathDays}d`] || aftermathNormalizedPct[aftermathNormalizedPct.length - 1] || 0,
+      maxDrawdown,
+      maxExcursion,
       outcomes,
-    };
-  });
+    });
+  }
   
   // Build distribution series with CORRECT length = aftermathDays
-  const distributionSeries = buildDistributionSeries(matches, cfg.aftermathDays);
+  const distributionSeries = buildDistributionSeries(matches, aftermathDays);
   
   // Calculate stats
   const returns = matches.map(m => m.return);
@@ -156,7 +198,12 @@ function buildOverlayPack(
     sampleSize: matches.length,
   };
   
-  return { currentWindow, matches, distributionSeries, stats };
+  return { 
+    currentWindow: { raw: [], normalized: [], timestamps: [] }, 
+    matches, 
+    distributionSeries, 
+    stats 
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════

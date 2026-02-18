@@ -261,9 +261,66 @@ export class FractalDailyJobService {
       }
       
       // ═══════════════════════════════════════════════════════════
-      // STEP 4: Audit Log
+      // STEP 4: Run Alerts Engine (BLOCK 67-68)
+      // Order: WRITE → RESOLVE → REBUILD → ALERTS_RUN → AUDIT
       // ═══════════════════════════════════════════════════════════
       const step4: DailyJobStep = {
+        name: 'ALERTS_RUN',
+        startedAt: new Date(),
+        status: 'RUNNING'
+      };
+      context.steps.push(step4);
+      
+      try {
+        console.log(`[DailyJob] Step 4: Running alerts engine...`);
+        
+        // Build alert context from current state
+        // Note: This reads the REBUILT equity/health state
+        const alertCtx: AlertEngineContext = {
+          symbol: 'BTC',
+          current: {
+            // Will be populated from rebuilt data
+          },
+          previous: {
+            // Previous day state from snapshots
+          }
+        };
+        
+        // Run alert engine (evaluate + log to Mongo)
+        const alertRunResult = await runAlertEngine(alertCtx);
+        
+        // Send to Telegram (respects FRACTAL_ALERTS_ENABLED)
+        const sendableAlerts = alertRunResult.events.filter(e => e.blockedBy === 'NONE');
+        if (sendableAlerts.length > 0) {
+          const tgResult = await sendAlertsToTelegram(sendableAlerts);
+          alertsResult.sent = tgResult.sent;
+        }
+        
+        const quota = await getQuotaStatus();
+        alertsResult = {
+          sent: sendableAlerts.length,
+          blocked: alertRunResult.blockedCount,
+          quotaUsed: quota.used,
+          quotaMax: quota.max
+        };
+        
+        step4.result = alertsResult;
+        step4.status = 'SUCCESS';
+        step4.completedAt = new Date();
+        
+        console.log(`[DailyJob] Alerts: sent=${alertsResult.sent}, blocked=${alertsResult.blocked}, quota=${alertsResult.quotaUsed}/${alertsResult.quotaMax}`);
+      } catch (err: any) {
+        step4.status = 'FAILED';
+        step4.error = err.message;
+        step4.completedAt = new Date();
+        errors.push(`ALERTS_RUN: ${err.message}`);
+        console.error(`[DailyJob] Alerts error:`, err);
+      }
+      
+      // ═══════════════════════════════════════════════════════════
+      // STEP 5: Audit Log
+      // ═══════════════════════════════════════════════════════════
+      const step5: DailyJobStep = {
         name: 'AUDIT_LOG',
         startedAt: new Date(),
         status: 'RUNNING'

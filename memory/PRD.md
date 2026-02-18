@@ -100,7 +100,40 @@ TG_ADMIN_CHAT_ID=your_chat_id
 - **URL:** https://tradeanalyzer-8.preview.emergentagent.com
 - **Admin:** /admin/fractal
 - **Alerts Tab:** /admin/fractal?tab=alerts
-- **Auth:** Not required (open access)
+- **Shadow Tab:** /admin/fractal?tab=shadow
+- **Auth:** admin / admin12345
 
 ## Last Updated
-2026-02-18 — UI/UX Improvements: Added tooltips, Russian descriptions, color-coded zones, moderator-friendly explanations
+2026-02-18 — UI/UX Unification Complete: 
+- ✅ Overview Tab: Modernized with tooltips, Russian descriptions, progress bars
+- ✅ Volatility Tab: Unified design with Russian tooltips
+- ✅ Alerts Tab: Unified design with Russian tooltips  
+- ✅ Shadow Tab: Full unification — all components have Russian tooltips:
+  - VerdictHeader: 6 metric cards with tooltips (Verdict, Resolved Signals, Shadow Score, ΔSharpe, ΔMaxDD, ΔCAGR)
+  - Equity Overlay: Tooltip with chart explanation
+  - Divergence Matrix: Russian legend and tooltip
+  - Calibration Delta: Tooltips and Russian explanations for ECE/Brier Score
+  - Divergence Ledger: Tooltip and Russian status messages
+  - Governance Actions: Full Russian UI with tooltips
+
+## Design Standards
+- **Technical terms**: English (Verdict, Sharpe, MaxDD, CAGR, ECE, Brier Score)
+- **Descriptions/Tooltips**: Russian (пояснения для модераторов)
+- **InfoTooltip Component**: `/app/frontend/src/components/fractal/admin/InfoTooltip.jsx`
+
+## Upcoming Tasks
+
+### P0 — BLOCK 68.3: Auto Trigger Integration
+- Activate backend alert triggers (Regime Shift, Health Drop, etc.)
+- Integrate with daily cron job in `alert.engine.service.ts`
+- Auto-generate alerts based on data changes
+
+### P1 — BLOCK 69: Alert Correlation Links  
+- Add deep links from alerts to relevant admin sections
+- Filter by time of alert event
+
+### P2 — Future
+- BLOCK A2: Contract Lock v2.1.1
+- BLOCK A3: Weekly Governance Digest
+- BLOCK A4: Isolation Hardening
+- PHASE B: Productization

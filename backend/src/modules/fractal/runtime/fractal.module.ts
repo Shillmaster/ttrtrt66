@@ -36,6 +36,7 @@ import { fractalMultiSignalRoutes } from '../api/fractal.multi-signal.routes.js'
 import { fractalRegimeRoutes } from '../api/fractal.regime.routes.js';
 import { fractalTerminalRoutes } from '../api/fractal.terminal.routes.js';
 import { registerVolatilityRoutes } from '../api/fractal.volatility.routes.js';
+import { registerAlertRoutes } from '../alerts/index.js';
 
 // ═══════════════════════════════════════════════════════════════
 // BLOCK 42.1 — Host Dependencies Contract

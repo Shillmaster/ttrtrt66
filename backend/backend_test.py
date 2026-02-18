@@ -1161,6 +1161,373 @@ class FractalAPITester:
         return success
 
     # ═══════════════════════════════════════════════════════════════
+    # BLOCK 67-68: ALERT ENGINE TESTS
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_alerts_list(self):
+        """Test GET /api/fractal/v2.1/admin/alerts - list alerts with filters"""
+        success, details = self.make_request("GET", "/api/fractal/v2.1/admin/alerts")
+        
+        if success:
+            data = details.get("response_data", {})
+            required_fields = ["items", "stats", "quota"]
+            missing_fields = [field for field in required_fields if field not in data]
+            
+            if missing_fields:
+                success = False
+                details["error"] = f"Missing fields: {missing_fields}"
+            else:
+                # Validate items structure
+                items = data.get("items", [])
+                if items and len(items) > 0:
+                    first_item = items[0]
+                    item_fields = ["symbol", "type", "level", "message", "blockedBy", "triggeredAt"]
+                    missing_item_fields = [field for field in item_fields if field not in first_item]
+                    if missing_item_fields:
+                        success = False
+                        details["error"] = f"Missing alert item fields: {missing_item_fields}"
+                
+                # Validate quota structure
+                if success:
+                    quota = data.get("quota", {})
+                    quota_fields = ["used", "max", "remaining"]
+                    missing_quota_fields = [field for field in quota_fields if field not in quota]
+                    if missing_quota_fields:
+                        success = False
+                        details["error"] = f"Missing quota fields: {missing_quota_fields}"
+                    elif quota.get("max") != 3:
+                        success = False
+                        details["error"] = f"Expected quota max 3, got {quota.get('max')}"
+        
+        self.log_test("Alert List API (BLOCK 67-68)", success, details)
+        return success
+
+    def test_alerts_quota(self):
+        """Test GET /api/fractal/v2.1/admin/alerts/quota - quota status"""
+        success, details = self.make_request("GET", "/api/fractal/v2.1/admin/alerts/quota")
+        
+        if success:
+            data = details.get("response_data", {})
+            required_fields = ["used", "max", "remaining"]
+            missing_fields = [field for field in required_fields if field not in data]
+            
+            if missing_fields:
+                success = False
+                details["error"] = f"Missing quota fields: {missing_fields}"
+            elif data.get("max") != 3:
+                success = False
+                details["error"] = f"Expected max quota 3, got {data.get('max')}"
+            elif data.get("used", 0) + data.get("remaining", 0) != 3:
+                success = False
+                details["error"] = f"Quota math error: used({data.get('used')}) + remaining({data.get('remaining')}) != 3"
+            else:
+                details["quota_status"] = {
+                    "used": data.get("used"),
+                    "remaining": data.get("remaining"),
+                    "max": data.get("max")
+                }
+        
+        self.log_test("Alert Quota Status (BLOCK 67-68)", success, details)
+        return success
+
+    def test_alerts_stats(self):
+        """Test GET /api/fractal/v2.1/admin/alerts/stats - statistics"""
+        success, details = self.make_request("GET", "/api/fractal/v2.1/admin/alerts/stats")
+        
+        if success:
+            data = details.get("response_data", {})
+            required_fields = ["stats", "quota"]
+            missing_fields = [field for field in required_fields if field not in data]
+            
+            if missing_fields:
+                success = False
+                details["error"] = f"Missing fields: {missing_fields}"
+            else:
+                stats = data.get("stats", {})
+                if "last24h" not in stats or "last7d" not in stats:
+                    success = False
+                    details["error"] = "Missing last24h or last7d stats"
+                else:
+                    # Validate stats structure
+                    last24h = stats.get("last24h", {})
+                    last7d = stats.get("last7d", {})
+                    
+                    level_fields = ["INFO", "HIGH", "CRITICAL"]
+                    for period, period_stats in [("last24h", last24h), ("last7d", last7d)]:
+                        for level in level_fields:
+                            if level not in period_stats:
+                                success = False
+                                details["error"] = f"Missing {level} count in {period}"
+                                break
+                        if not success:
+                            break
+                    
+                    if success:
+                        details["stats_summary"] = {
+                            "last24h": {level: last24h.get(level, 0) for level in level_fields},
+                            "last7d": {level: last7d.get(level, 0) for level in level_fields}
+                        }
+        
+        self.log_test("Alert Statistics (BLOCK 67-68)", success, details)
+        return success
+
+    def test_alerts_latest(self):
+        """Test GET /api/fractal/v2.1/admin/alerts/latest - recent alerts"""
+        success, details = self.make_request("GET", "/api/fractal/v2.1/admin/alerts/latest")
+        
+        if success:
+            data = details.get("response_data", {})
+            if "items" not in data:
+                success = False
+                details["error"] = "Missing 'items' field"
+            else:
+                items = data.get("items", [])
+                if len(items) > 20:
+                    success = False
+                    details["error"] = f"Expected max 20 items, got {len(items)}"
+                elif items:
+                    # Validate first item structure
+                    first_item = items[0]
+                    item_fields = ["symbol", "type", "level", "message", "triggeredAt"]
+                    missing_fields = [field for field in item_fields if field not in first_item]
+                    if missing_fields:
+                        success = False
+                        details["error"] = f"Missing latest alert fields: {missing_fields}"
+                    elif first_item.get("symbol") != "BTC":
+                        success = False
+                        details["error"] = f"Expected BTC alerts only, got {first_item.get('symbol')}"
+                    elif first_item.get("blockedBy") != "NONE":
+                        success = False
+                        details["error"] = f"Latest should only show sent alerts (blockedBy=NONE), got {first_item.get('blockedBy')}"
+                
+                details["latest_count"] = len(items)
+        
+        self.log_test("Alert Latest (BLOCK 67-68)", success, details)
+        return success
+
+    def test_alerts_check_dry_run(self):
+        """Test POST /api/fractal/v2.1/admin/alerts/check - dry run"""
+        data = {
+            "symbol": "BTC",
+            "current": {
+                "volRegime": "NORMAL",
+                "marketPhase": "BULL",
+                "health": "HEALTHY",
+                "tailRisk": 5.2,
+                "decision": "LONG",
+                "blockers": []
+            },
+            "previous": {
+                "volRegime": "LOW",
+                "marketPhase": "BULL", 
+                "health": "HEALTHY",
+                "tailRisk": 3.1
+            }
+        }
+        success, details = self.make_request("POST", "/api/fractal/v2.1/admin/alerts/check", data=data)
+        
+        if success:
+            response_data = details.get("response_data", {})
+            if not response_data.get("ok"):
+                success = False
+                details["error"] = "Expected 'ok': true"
+            elif not response_data.get("dryRun"):
+                success = False
+                details["error"] = "Expected 'dryRun': true"
+            elif "eventsCount" not in response_data:
+                success = False
+                details["error"] = "Missing 'eventsCount' field"
+            elif "events" not in response_data:
+                success = False
+                details["error"] = "Missing 'events' field"
+            else:
+                events = response_data.get("events", [])
+                events_count = response_data.get("eventsCount", 0)
+                
+                if len(events) != events_count:
+                    success = False
+                    details["error"] = f"Events count mismatch: {len(events)} vs {events_count}"
+                else:
+                    # Should detect regime shift from LOW to NORMAL
+                    regime_events = [e for e in events if e.get("type") == "REGIME_SHIFT"]
+                    if len(regime_events) == 0:
+                        details["note"] = "No regime shift detected (may be expected)"
+                    else:
+                        details["note"] = f"Detected {len(regime_events)} regime shift events"
+                    
+                    details["dry_run_results"] = {
+                        "events_count": events_count,
+                        "regime_shifts": len(regime_events),
+                        "total_events": len(events)
+                    }
+        
+        self.log_test("Alert Check Dry Run (BLOCK 67-68)", success, details)
+        return success
+
+    def test_alerts_run_production(self):
+        """Test POST /api/fractal/v2.1/admin/alerts/run - production run"""
+        data = {
+            "symbol": "BTC",
+            "current": {
+                "volRegime": "CRISIS",
+                "marketPhase": "BEAR",
+                "health": "CRITICAL",
+                "tailRisk": 15.8,
+                "decision": "CASH",
+                "blockers": []
+            },
+            "previous": {
+                "volRegime": "HIGH",
+                "marketPhase": "BEAR",
+                "health": "ALERT", 
+                "tailRisk": 8.2
+            }
+        }
+        success, details = self.make_request("POST", "/api/fractal/v2.1/admin/alerts/run", data=data)
+        
+        if success:
+            response_data = details.get("response_data", {})
+            if not response_data.get("ok"):
+                success = False
+                details["error"] = "Expected 'ok': true"
+            elif "sentCount" not in response_data:
+                success = False
+                details["error"] = "Missing 'sentCount' field"
+            elif "blockedCount" not in response_data:
+                success = False
+                details["error"] = "Missing 'blockedCount' field"
+            elif "events" not in response_data:
+                success = False
+                details["error"] = "Missing 'events' field"
+            elif "telegram" not in response_data:
+                success = False
+                details["error"] = "Missing 'telegram' field"
+            else:
+                sent_count = response_data.get("sentCount", 0)
+                blocked_count = response_data.get("blockedCount", 0)
+                events = response_data.get("events", [])
+                telegram = response_data.get("telegram", {})
+                
+                # Should detect multiple alerts (crisis enter, health drop, tail spike)
+                crisis_events = [e for e in events if e.get("type") == "CRISIS_ENTER"]
+                health_events = [e for e in events if e.get("type") == "HEALTH_DROP"]
+                tail_events = [e for e in events if e.get("type") == "TAIL_SPIKE"]
+                
+                details["production_run_results"] = {
+                    "sent_count": sent_count,
+                    "blocked_count": blocked_count,
+                    "total_events": len(events),
+                    "crisis_enter": len(crisis_events),
+                    "health_drop": len(health_events),
+                    "tail_spike": len(tail_events),
+                    "telegram_sent": telegram.get("sent", 0),
+                    "telegram_failed": telegram.get("failed", 0)
+                }
+                
+                # Validate telegram integration
+                if "sent" not in telegram or "failed" not in telegram:
+                    success = False
+                    details["error"] = "Missing telegram sent/failed counts"
+        
+        self.log_test("Alert Production Run (BLOCK 67-68)", success, details)
+        return success
+
+    def test_alerts_test_telegram(self):
+        """Test POST /api/fractal/v2.1/admin/alerts/test - send test alert"""
+        success, details = self.make_request("POST", "/api/fractal/v2.1/admin/alerts/test")
+        
+        if success:
+            response_data = details.get("response_data", {})
+            if "ok" not in response_data:
+                success = False
+                details["error"] = "Missing 'ok' field"
+            elif "telegram" not in response_data:
+                success = False
+                details["error"] = "Missing 'telegram' field"
+            else:
+                telegram = response_data.get("telegram", {})
+                if "sent" not in telegram or "failed" not in telegram:
+                    success = False
+                    details["error"] = "Missing telegram sent/failed counts"
+                else:
+                    details["test_alert_results"] = {
+                        "success": response_data.get("ok"),
+                        "telegram_sent": telegram.get("sent", 0),
+                        "telegram_failed": telegram.get("failed", 0)
+                    }
+                    
+                    # Note: Test alert might fail if Telegram is not configured
+                    if not response_data.get("ok") and telegram.get("failed", 0) > 0:
+                        details["note"] = "Test alert failed - Telegram may not be configured (expected in test environment)"
+        
+        self.log_test("Alert Test Telegram (BLOCK 67-68)", success, details)
+        return success
+
+    def test_alerts_filters(self):
+        """Test alert list with various filters"""
+        # Test level filter
+        params = {"level": "CRITICAL"}
+        success, details = self.make_request("GET", "/api/fractal/v2.1/admin/alerts", params=params)
+        
+        if success:
+            data = details.get("response_data", {})
+            items = data.get("items", [])
+            
+            # Check if all items have CRITICAL level (if any items exist)
+            if items:
+                non_critical = [item for item in items if item.get("level") != "CRITICAL"]
+                if non_critical:
+                    success = False
+                    details["error"] = f"Found {len(non_critical)} non-CRITICAL alerts in CRITICAL filter"
+            
+            details["critical_filter_count"] = len(items)
+        
+        # Test type filter
+        if success:
+            params = {"type": "REGIME_SHIFT"}
+            success2, details2 = self.make_request("GET", "/api/fractal/v2.1/admin/alerts", params=params)
+            
+            if success2:
+                data2 = details2.get("response_data", {})
+                items2 = data2.get("items", [])
+                
+                # Check if all items have REGIME_SHIFT type (if any items exist)
+                if items2:
+                    non_regime = [item for item in items2 if item.get("type") != "REGIME_SHIFT"]
+                    if non_regime:
+                        success = False
+                        details["error"] = f"Found {len(non_regime)} non-REGIME_SHIFT alerts in type filter"
+                
+                details["regime_shift_filter_count"] = len(items2)
+            else:
+                success = False
+                details["error"] = f"Type filter failed: {details2.get('error')}"
+        
+        # Test status filter
+        if success:
+            params = {"blockedBy": "NONE"}
+            success3, details3 = self.make_request("GET", "/api/fractal/v2.1/admin/alerts", params=params)
+            
+            if success3:
+                data3 = details3.get("response_data", {})
+                items3 = data3.get("items", [])
+                
+                # Check if all items have blockedBy=NONE (sent alerts)
+                if items3:
+                    blocked_items = [item for item in items3 if item.get("blockedBy") != "NONE"]
+                    if blocked_items:
+                        success = False
+                        details["error"] = f"Found {len(blocked_items)} blocked alerts in NONE filter"
+                
+                details["sent_alerts_count"] = len(items3)
+            else:
+                success = False
+                details["error"] = f"Status filter failed: {details3.get('error')}"
+        
+        self.log_test("Alert Filters (BLOCK 67-68)", success, details)
+        return success
+
+    # ═══════════════════════════════════════════════════════════════
     # BLOCK 34.5: GATE × RISK COMBO SWEEP TESTS
     # ═══════════════════════════════════════════════════════════════
 

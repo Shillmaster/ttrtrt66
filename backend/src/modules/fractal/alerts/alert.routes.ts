@@ -110,15 +110,17 @@ export async function registerAlertRoutes(app: FastifyInstance) {
   // POST /admin/alerts/check - Dry run (evaluate without sending)
   // ═══════════════════════════════════════════════════════════════
   app.post(`${prefix}/check`, async (request) => {
-    const body = request.body as AlertEngineContext;
+    const body = (request.body || {}) as Partial<AlertEngineContext>;
     
-    // Validate BTC-only
-    if (body.symbol !== 'BTC') {
-      return { ok: false, error: 'Only BTC is supported' };
-    }
+    // Build context with defaults
+    const ctx: AlertEngineContext = {
+      symbol: 'BTC',
+      current: body.current || {},
+      previous: body.previous || {}
+    };
     
     // Run engine without saving or sending
-    const events = await evaluateAlerts(body);
+    const events = await evaluateAlerts(ctx);
     
     return {
       ok: true,

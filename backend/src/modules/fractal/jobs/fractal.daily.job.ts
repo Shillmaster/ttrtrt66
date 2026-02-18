@@ -157,6 +157,7 @@ export class FractalDailyJobService {
     let snapshotResult = { written: 0, skipped: 0, asofDate: '' };
     let resolveResult = { resolved7d: 0, resolved14d: 0, resolved30d: 0 };
     let equityRebuilt = false;
+    let alertsResult = { sent: 0, blocked: 0, quotaUsed: 0, quotaMax: 3 };
     
     try {
       // ═══════════════════════════════════════════════════════════
